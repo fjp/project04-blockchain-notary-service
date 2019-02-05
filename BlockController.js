@@ -1,6 +1,7 @@
 const SHA256 = require('crypto-js/sha256');
 const BlockClass = require('./Block.js');
 const BlockChain = require('./BlockChain.js');
+const Mempool = require('./Mempool.js');
 
 /**
  * Controller Definition to encapsulate routes to work with blocks
@@ -16,13 +17,41 @@ class BlockController {
         this.init();
         this.getBlockByIndex();
         this.postNewBlock();
+
+        this.requestValidation();
+
+        // Handle invalid requests
         this.handleRequests();
     }
 
     async init() {
+        // Create the Blockchain
         this.blockChain = await new BlockChain.Blockchain(); // TODO: is this await needed?
         console.log("New blockchain created");
-        await this.initializeMockData(); // TODO: is this await even helpful?
+        //await this.initializeMockData(); // TODO: is this await even helpful?
+
+        // Create the Mempool
+        this.mempool = await new Mempool.Mempool(); // TODO: is this await needed?
+        console.log("Mempool created");
+    }
+
+
+    /**
+     * POST Endpoint to request validation for users
+     */
+    requestValidation() {
+        this.app.post("/requestValidation", (req, res) => {
+            // Add the wallet address to the user validation request
+            req.walletAddress = req.body.address;
+
+            // Add time stamp to user validation request
+            req.requestTimeStamp = new Date().getTime().toString().slice(0,-3);
+
+            // Add the user validation request to the mempool if it does not exist already and return the updated request object
+            requestObject = self.mempool.addRequestValidation(req);
+            // Respond to the user with the updated request object
+            res.send(requestObject);
+        });
     }
 
     /**
