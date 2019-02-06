@@ -40,7 +40,10 @@ class Mempool {
      * This method delets a validation request from timeourRequests if the condition is met.
      */
     async setTimeOut(request) {
-        this.timeoutRequests[request.walletAddress] = setTimeout(function() {
+        // Add timeout to the timeoutRequest map for the request wallet address
+        // Use an arrow function as callback for setTimeout() to prived access to
+        // the Mempool class method removeValidationRequest() which clears the mempool and timeoutRequests array.
+        this.timeoutRequests[request.walletAddress] = setTimeout( () => {
             this.removeValidationRequest(request);
         }, TimeoutRequestsWindowTime );
     }
