@@ -16,18 +16,20 @@ class Mempool {
     /**
      * Add request validation request in the mempool.
      */
-    async addValidationRequest(request) {
-        // Update the remaining time (validation window time) for the request
-        request = await self.verifyTimeLeft(request);
-
+    async addRequestValidation(request) {
         // Check if the user validation request already exists in the mempool
-        if (false === self.mempool.includes(request.walletAddress)) {
-            await self.setTimeOut(request);
-            request.message = `${request.walletAddress}:${request.requestTimeStamp}:starRegistry`;
-            self.mempool[request.walletAddress] = request;
+        console.log("Mempool:", this.mempool);
+        if (request.walletAddress in this.mempool) {
+            request = this.mempool[request.walletAddress];
+            console.log("[Mempool] Existing request validation");
         } else {
-            request = self.mempool[request.walletAddress];
+            await this.setTimeOut(request);
+            request.message = `${request.walletAddress}:${request.requestTimeStamp}:starRegistry`;
+            this.mempool[request.walletAddress] = request;
+            console.log("[Mempool] Added new request validation to mempool");
         }
+        // Update the remaining time (validation window time) for the request
+        request = await this.verifyTimeLeft(request);
 
         return request;
     }
@@ -38,8 +40,8 @@ class Mempool {
      * This method delets a validation request from timeourRequests if the condition is met.
      */
     async setTimeOut(request) {
-        self.timeoutRequests[request.walletAddress] = setTimeout(function() {
-            self.removeValidationRequest(request.walletAddress)
+        this.timeoutRequests[request.walletAddress] = setTimeout(function() {
+            this.removeValidationRequest(request);
         }, TimeoutRequestsWindowTime );
     }
 
@@ -47,8 +49,8 @@ class Mempool {
      * This method delets a validation request from timeourRequests.
      */
     async removeValidationRequest(request) {
-        delete self.mempool[request.walletAddress];
-        delete self.timeoutRequests[request.walletAddress];
+        delete this.mempool[request.walletAddress];
+        delete this.timeoutRequests[request.walletAddress];
     }
 
 

@@ -39,17 +39,18 @@ class BlockController {
     /**
      * POST Endpoint to request validation for users
      */
-    requestValidation() {
-        this.app.post("/requestValidation", (req, res) => {
+    async requestValidation() {
+        this.app.post("/requestValidation", async (req, res) => {
             // Add the wallet address to the user validation request
-            req.walletAddress = req.body.address;
+            let requestObject = {};
+            requestObject.walletAddress = req.body.address;
 
             // Add time stamp to user validation request
-            req.requestTimeStamp = new Date().getTime().toString().slice(0,-3);
-
+            requestObject.requestTimeStamp = new Date().getTime().toString().slice(0,-3);
             // Add the user validation request to the mempool if it does not exist already and return the updated request object
-            requestObject = self.mempool.addRequestValidation(req);
+            requestObject = await this.mempool.addRequestValidation(requestObject);
             // Respond to the user with the updated request object
+            console.log(requestObject);
             res.send(requestObject);
         });
     }
