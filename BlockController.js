@@ -1,4 +1,6 @@
 const SHA256 = require('crypto-js/sha256');
+const bitcoinMessage = require('bitcoinjs-message');
+
 const BlockClass = require('./Block.js');
 const BlockChain = require('./BlockChain.js');
 const Mempool = require('./Mempool.js');
@@ -20,6 +22,8 @@ class BlockController {
 
         this.requestValidation();
 
+        this.validateRequest();
+
         // Handle invalid requests
         this.handleRequests();
     }
@@ -27,14 +31,29 @@ class BlockController {
     async init() {
         // Create the Blockchain
         this.blockChain = await new BlockChain.Blockchain(); // TODO: is this await needed?
-        console.log("New blockchain created");
+        console.log("[BlockController] New blockchain created");
         //await this.initializeMockData(); // TODO: is this await even helpful?
 
         // Create the Mempool
         this.mempool = await new Mempool.Mempool(); // TODO: is this await needed?
-        console.log("Mempool created");
+        console.log("[BlockController] Mempool created");
     }
 
+    /**
+     * POST Endpoint to validate a user request in the mempool
+     */
+    async validateRequest() {
+        this.app.post("/message-signature/validate", async (req, res) => {
+            // Extract the address and signature from the received request
+            let request = {};
+            request.walletAddress = req.body.address;
+            request.signature = req.body.signature;
+            // validate the request by wallet address
+            let validRequest = await this.mempool.validateRequestByWallet(request);
+            console.log("[BlockController] Send validRequest", validRequest);
+            res.send(validRequest);
+        });
+    }
 
     /**
      * POST Endpoint to request validation for users
@@ -50,7 +69,7 @@ class BlockController {
             // Add the user validation request to the mempool if it does not exist already and return the updated request object
             requestObject = await this.mempool.addRequestValidation(requestObject);
             // Respond to the user with the updated request object
-            console.log(requestObject);
+            console.log("[BlockController] Send requestObject:", requestObject);
             res.send(requestObject);
         });
     }
