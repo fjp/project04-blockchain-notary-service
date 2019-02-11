@@ -58,7 +58,7 @@ class Blockchain {
         // SHA256 requires a string of data
         newBlock.hash = SHA256(JSON.stringify(newBlock)).toString();
         // add block to chain
-        return this.db.addDataToLevelDB(JSON.stringify(newBlock)) // TODO: await required here?
+        return await this.db.addDataToLevelDB(JSON.stringify(newBlock)) // TODO: await required here?
     }
 
     // Get Block By Height

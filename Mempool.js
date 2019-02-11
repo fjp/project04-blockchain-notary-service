@@ -6,6 +6,7 @@ const bitcoinMessage = require('bitcoinjs-message');
 |  ===============================================*/
 
 const TimeoutRequestsWindowTime = 5*60*1000;
+const TimeoutValidWindowTime = 30*60*1000;
 
 class Mempool {
 	constructor(data){
@@ -64,6 +65,31 @@ class Mempool {
     }
 
 
+
+    /**
+     * A valid request from the user should be available for 30 minutes.
+     * This method delets a valid request from timeoutRequests array if the condition is met.
+     */
+    async setValidTimeOut(request) {
+        // Add timeout to the timeoutRequest map for the request wallet address
+        // Use an arrow function as callback for setTimeout() to prived access to
+        // the Mempool class method removeValidationRequest() which clears the mempool and timeoutRequests array.
+        this.timeoutRequests[request.status.address] = setTimeout( () => {
+            console.log("[Mempool] Valid Request timeout - removing from Mempool");
+            this.removeValidRequest(request);
+        }, TimeoutValidWindowTime );
+    }
+
+    /**
+     * This method deletes a valid request from timeoutRequests.
+     */
+    async removeValidRequest(request) {
+        delete this.mempoolValid[request.status.address];
+        delete this.timeoutRequests[request.status.address];
+        console.log("[Mempool] Valid Mempool:", this.mempoolValid);
+    }
+
+
     /**
      * This method verifies the remaining time of a validation request.
      */
@@ -71,6 +97,17 @@ class Mempool {
         let timeElapse = (new Date().getTime().toString().slice(0,-3)) - request.requestTimeStamp;
         let timeLeft = (TimeoutRequestsWindowTime/1000) - timeElapse;
         request.validationWindow = timeLeft;
+        return request;
+    }
+
+
+    /**
+     * This method verifies the remaining time of a valid request.
+     */
+    async verifyValidTimeLeft(request) {
+        let timeElapse = (new Date().getTime().toString().slice(0,-3)) - request.status.requestTimeStamp;
+        let timeLeft = (TimeoutValidWindowTime/1000) - timeElapse;
+        request.status.validationWindow = timeLeft;
         return request;
     }
 
@@ -109,12 +146,17 @@ class Mempool {
                             "messageSignature": true
                         }
                     };
-                    // Save the valid request to the valid mempool array
-                    this.mempoolValid[address] = validRequest;
-
                     // Remove the object from the mempool
                     console.log("[Mempool] Valid request - Removing request from Mempool")
                     this.removeValidationRequest(request);
+
+
+                    // Update the timeout to TimeValidWindowTime (30 minutes)
+                    await this.setValidTimeOut(validRequest);
+                    validRequest = await this.verifyValidTimeLeft(validRequest);
+
+                    // Save the valid request to the valid mempool array
+                    this.mempoolValid[address] = validRequest;
 
                     // Return the validRequest object
                     return validRequest;
@@ -125,12 +167,35 @@ class Mempool {
                 console.log("[Mempool] Validation Window: No time left");
             }
         } else {
+            // If the request is not in the mempool, check if it is in the valid mempool
+            let validRequest = await this.mempoolValid[address];
+            if (undefined != validRequest) {
+                validRequest = await this.verifyValidTimeLeft(validRequest);
+                return validRequest;
+            }
             console.log("[Mempool] Error Request not in Mempool");
         }
 
         return false;
     }
 
+    /*
+     * Verify if an address that wants to register a star already sent a validation request
+     */
+    async verifyAddressRequest(address) {
+        let validRequest = this.mempoolValid[address];
+        if (undefined != validRequest) {
+            validRequest = await this.verifyValidTimeLeft(validRequest);
+            if (validRequest.status.validationWindow > 0) {
+                return true;
+            } else {
+                console.log("[Mempool] Validation timeout");
+            }
+        } else {
+            console.log("[Mempool] No valid request with this address in the mempool");
+            return false;
+        }
+    }
 
 
 }

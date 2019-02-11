@@ -1,5 +1,6 @@
 const SHA256 = require('crypto-js/sha256');
 const bitcoinMessage = require('bitcoinjs-message');
+const hex2ascii = require('hex2ascii')
 
 const BlockClass = require('./Block.js');
 const BlockChain = require('./BlockChain.js');
@@ -18,7 +19,8 @@ class BlockController {
         this.app = app;
         this.init();
         this.getBlockByIndex();
-        this.postNewBlock();
+        //this.postNewBlock();
+        this.postNewStarBlock();
 
         this.requestValidation();
 
@@ -73,6 +75,64 @@ class BlockController {
             res.send(requestObject);
         });
     }
+
+
+
+    /**
+     * Implement a POST Endpoint to add a new Block, url: "/block"
+     */
+    postNewStarBlock() {
+        this.app.post("/block", async (req, res) => {
+            let address = req.body.address;
+            let star = req.body.star;
+            if (address === "" || address === undefined) {
+                res.status(404);
+                res.json({"error": "Address incorrect" });
+            }
+            let isValid = await this.mempool.verifyAddressRequest(address);
+            if (false === isValid) {
+                res.status(404);
+                res.json({"error": "Address not yet verified"});
+            }
+            if (star === "" || star === undefined || Array.isArray(star)) {
+                res.status(404);
+                res.json({"error": "Star data incorrect" });
+            }
+
+
+            // Encode star story data
+            let RA = star.ra;
+            let DEC = star.dec;
+            let MAG = star.mag;
+            let CEN = star.cen;
+            let starStory = star.story;
+            let body = {
+                address: address,
+                star: {
+                    ra: RA,
+                    dec: DEC,
+                    mag: MAG,
+                    cen: CEN,
+                    story: Buffer(starStory).toString('hex')
+                }
+            };
+
+            let newBlock = await new BlockClass.Block(body); // TODO: is this await needed?
+            newBlock = await this.blockChain.addBlock(newBlock);
+            // Convert stringified object to json
+            newBlock = JSON.parse(newBlock);
+            console.log("New Block added to blockchain");
+            console.log(newBlock);
+            // Add the decoded star story to the block body
+            newBlock.body.star.storyDecoded = hex2ascii(newBlock.body.star.story);
+            console.log(newBlock);
+            res.json(newBlock); // TODO: send json format?
+
+
+        });
+    }
+
+
 
     /**
      * Implement a GET Endpoint to retrieve a block by index, url: "/block/:index"
