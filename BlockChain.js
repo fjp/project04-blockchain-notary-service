@@ -61,6 +61,13 @@ class Blockchain {
         return await this.db.addDataToLevelDB(JSON.stringify(newBlock)) // TODO: await required here?
     }
 
+    // Get Block By Wallet Address
+    async getBlockByWalletAddress(walletAddress) {
+        let blocks = await this.db.getBlockByWalletAddress(walletAddress);
+        //console.log("Block", block);
+        return blocks;
+    }
+
     // Get Block By Hash
     async getBlockByHash(hash) {
         let block = await this.db.getBlockByHash(hash);

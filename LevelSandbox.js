@@ -44,6 +44,29 @@ class LevelSandbox {
         });
     }
 
+    // Get block by wallet address
+    getBlockByWalletAddress(walletAddress) {
+        let self = this;
+        let blocks = [];
+        return new Promise(function(resolve, reject){
+            self.db.createReadStream()
+                .on('data', function (data) {
+                    data = JSON.parse(data.value);
+                    //console.log("[Level] getBlockByHash", data);
+                    let address = data.body.address;
+                    if(undefined != address && address === walletAddress){
+                        blocks.push(data);
+                    }
+                })
+                .on('error', function (err) {
+                    reject(err)
+                })
+                .on('close', function () {
+                    resolve(blocks);
+                });
+        });
+    }
+
     // Get data from levelDB with key (Promise)
     getLevelDBData(key){
         return new Promise((resolve, reject) => {

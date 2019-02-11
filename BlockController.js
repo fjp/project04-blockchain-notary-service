@@ -20,6 +20,7 @@ class BlockController {
         this.init();
         this.getBlockByIndex();
         this.getBlockByHash();
+        this.getBlockByWalletAddress();
         //this.postNewBlock();
         this.postNewStarBlock();
 
@@ -135,6 +136,25 @@ class BlockController {
 
 
     /**
+     * Implement a GET Endpoint to retrieve a blocks for a wallet address, url: "/stars/address:address"
+     */
+    getBlockByWalletAddress() {
+        this.app.get("/stars/address:address", async (req, res) => {
+            let address = req.params.address;
+            console.log(`GET /stars/address:${address}`);
+            let blocks = await this.blockChain.getBlockByWalletAddress(address);
+            if (blocks === undefined) {
+                res.status(404)
+                res.send(`Error Block #${hash} not found`);
+            }
+            blocks.forEach((block) => {
+                block.body.star.storyDecoded = hex2ascii(block.body.star.story);
+            });
+            res.json(blocks);
+        });
+    }
+
+    /**
      * Implement a GET Endpoint to retrieve a block by its hash, url: "/stars/hash:hash"
      */
     getBlockByHash() {
@@ -163,7 +183,8 @@ class BlockController {
                     res.status(404)
                     res.send(`Error Block #${height} not found`);
                 }
-                res.send(block);
+                block.body.star.storyDecoded = hex2ascii(block.body.star.story);
+                res.json(block);
             }).catch((err) => {
                 let error = `Error: Block #${height} not found, ${err}`;
                 console.log(error);
