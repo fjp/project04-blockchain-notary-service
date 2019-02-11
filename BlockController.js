@@ -19,6 +19,7 @@ class BlockController {
         this.app = app;
         this.init();
         this.getBlockByIndex();
+        this.getBlockByHash();
         //this.postNewBlock();
         this.postNewStarBlock();
 
@@ -133,6 +134,22 @@ class BlockController {
     }
 
 
+    /**
+     * Implement a GET Endpoint to retrieve a block by its hash, url: "/stars/hash:hash"
+     */
+    getBlockByHash() {
+        this.app.get("/stars/hash:hash", async (req, res) => {
+            let hash = req.params.hash;
+            console.log(`GET /stars/hash:${hash}`);
+            let block = await this.blockChain.getBlockByHash(hash);
+            if (block === undefined) {
+                res.status(404)
+                res.send(`Error Block #${hash} not found`);
+            }
+            block.body.star.storyDecoded = hex2ascii(block.body.star.story);
+            res.json(block);
+        });
+    }
 
     /**
      * Implement a GET Endpoint to retrieve a block by index, url: "/block/:index"

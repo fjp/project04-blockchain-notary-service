@@ -20,6 +20,30 @@ class LevelSandbox {
         this.db = level(chainDB);
     }
 
+
+    // Get block by hash
+    getBlockByHash(hash) {
+        let self = this;
+        let block = null;
+        return new Promise(function(resolve, reject){
+            self.db.createReadStream()
+                .on('data', function (data) {
+                    data = JSON.parse(data.value);
+                    //console.log("[Level] getBlockByHash", data);
+                    if(data.hash === hash){
+                        block = data;
+                        console.log("[Level] getBlockByHash Found:", block);
+                    }
+                })
+                .on('error', function (err) {
+                    reject(err)
+                })
+                .on('close', function () {
+                    resolve(block);
+                });
+        });
+    }
+
     // Get data from levelDB with key (Promise)
     getLevelDBData(key){
         return new Promise((resolve, reject) => {
