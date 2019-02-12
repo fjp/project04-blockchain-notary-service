@@ -236,7 +236,7 @@ class BlockController {
     handleRequests() {
         this.app.all('*', (req, res) => {
             res.status(404);
-            res.send("Invalid request. Use GET /block/:height or POST /block");
+            res.send("Invalid request. Check out the readme at https://github.com/fjp/project04-blockchain-notary-service");
         });
     }
 
