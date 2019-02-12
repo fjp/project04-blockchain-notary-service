@@ -34,12 +34,12 @@ class BlockController {
 
     async init() {
         // Create the Blockchain
-        this.blockChain = await new BlockChain.Blockchain(); // TODO: is this await needed?
+        this.blockChain = new BlockChain.Blockchain();
         console.log("[BlockController] New blockchain created");
         //await this.initializeMockData(); // TODO: is this await even helpful?
 
         // Create the Mempool
-        this.mempool = await new Mempool.Mempool(); // TODO: is this await needed?
+        this.mempool = new Mempool.Mempool();
         console.log("[BlockController] Mempool created");
     }
 
@@ -119,7 +119,7 @@ class BlockController {
                 }
             };
 
-            let newBlock = await new BlockClass.Block(body); // TODO: is this await needed?
+            let newBlock = new BlockClass.Block(body);
             newBlock = await this.blockChain.addBlock(newBlock);
             // Convert stringified object to json
             newBlock = JSON.parse(newBlock);
@@ -128,18 +128,27 @@ class BlockController {
             // Add the decoded star story to the block body
             newBlock.body.star.storyDecoded = hex2ascii(newBlock.body.star.story);
             console.log(newBlock);
-            res.json(newBlock); // TODO: send json format?
+            res.json(newBlock);
 
 
         });
     }
 
+    decodeStory(block) {
+        try {
+            block.body.star.storyDecoded = hex2ascii(block.body.star.story);
+            return block;
+        } catch (err) {
+            console.log("[BlockController] Decode star story: block has no story", err);
+            return block;
+        }
+    }
 
     /**
      * Implement a GET Endpoint to retrieve a blocks for a wallet address, url: "/stars/address:address"
      */
     getBlockByWalletAddress() {
-        this.app.get("/stars/address:address", async (req, res) => {
+        this.app.get("/stars/address::address", async (req, res) => {
             let address = req.params.address;
             console.log(`GET /stars/address:${address}`);
             let blocks = await this.blockChain.getBlockByWalletAddress(address);
@@ -148,7 +157,7 @@ class BlockController {
                 res.send(`Error Block #${hash} not found`);
             }
             blocks.forEach((block) => {
-                block.body.star.storyDecoded = hex2ascii(block.body.star.story);
+                block = this.decodeStory(block); // block.body.star.storyDecoded = hex2ascii(block.body.star.story);
             });
             res.json(blocks);
         });
@@ -158,16 +167,17 @@ class BlockController {
      * Implement a GET Endpoint to retrieve a block by its hash, url: "/stars/hash:hash"
      */
     getBlockByHash() {
-        this.app.get("/stars/hash:hash", async (req, res) => {
+        this.app.get("/stars/hash::hash", async (req, res) => {
             let hash = req.params.hash;
             console.log(`GET /stars/hash:${hash}`);
             let block = await this.blockChain.getBlockByHash(hash);
-            if (block === undefined) {
+            if (undefined === block || null === block) {
                 res.status(404)
                 res.send(`Error Block #${hash} not found`);
+            } else {
+                block = this.decodeStory(block); // block.body.star.storyDecoded = hex2ascii(block.body.star.story);
+                res.json(block);
             }
-            block.body.star.storyDecoded = hex2ascii(block.body.star.story);
-            res.json(block);
         });
     }
 
@@ -183,7 +193,7 @@ class BlockController {
                     res.status(404)
                     res.send(`Error Block #${height} not found`);
                 }
-                block.body.star.storyDecoded = hex2ascii(block.body.star.story);
+                block = this.decodeStory(block); // block.body.star.storyDecoded = hex2ascii(block.body.star.story);
                 res.json(block);
             }).catch((err) => {
                 let error = `Error: Block #${height} not found, ${err}`;

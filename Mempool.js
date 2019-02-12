@@ -153,7 +153,7 @@ class Mempool {
 
                     // Update the timeout to TimeValidWindowTime (30 minutes)
                     await this.setValidTimeOut(validRequest);
-                    validRequest = await this.verifyValidTimeLeft(validRequest);
+                    //validRequest = await this.verifyValidTimeLeft(validRequest);
 
                     // Save the valid request to the valid mempool array
                     this.mempoolValid[address] = validRequest;
@@ -187,14 +187,16 @@ class Mempool {
         if (undefined != validRequest) {
             validRequest = await this.verifyValidTimeLeft(validRequest);
             if (validRequest.status.validationWindow > 0) {
+                // Remove the valid request from the valid mempool to avoid registering another star
+                this.removeValidRequest(validRequest);
                 return true;
             } else {
                 console.log("[Mempool] Validation timeout");
             }
         } else {
             console.log("[Mempool] No valid request with this address in the mempool");
-            return false;
         }
+        return false;
     }
 
 
